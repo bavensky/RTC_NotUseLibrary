@@ -33,17 +33,29 @@
     delay(1000);
   }
   
+  byte decToBcd(byte val)
+  {
+    // Convert normal decimal numbers to binary coded decimal
+    return ( (val/10*16) + (val%10) );
+  }
+  
+  byte bcdToDec(byte val)  
+  {
+    // Convert binary coded decimal to normal decimal numbers
+    return ( (val/16*10) + (val%16) );
+  }
+  
   /****** Set Date Time ***********************************/
   void setDateTime()
   {
     /*******  Config to time *****************************/
-    byte second =      0;    // Set Second 0-59
-    byte minute =      12;   // Set Minute 0-59
-    byte hour =        0;    // Set Hour   0-23
-    byte weekDay =     1;    // Set Day of Week  1-7
-    byte monthDay =    19;   // Set Day of Month 1-31
-    byte month =       10;   // Set Month  1-12
-    byte year  =       14;   // Set Year   0-99
+    byte set_second =      0;    // Set Second 0-59
+    byte set_minute =      43;   // Set Minute 0-59
+    byte set_hour =        22;    // Set Hour   0-23
+    byte set_weekDay =     1;    // Set Day of Week  1-7
+    byte set_monthDay =    19;   // Set Day of Month 1-31
+    byte set_month =       10;   // Set Month  1-12
+    byte set_year  =       14;   // Set Year   0-99
     
     /*******************************************************
     * BIT7 | BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0
@@ -65,106 +77,100 @@
     byte  d1;
     byte  d2;
   
-    
+    // Write to address ds1307
     Wire.beginTransmission(DS1307_ADDRESS);  
-    Wire.write(zero);    //stop Oscillator
-    Wire.write(decToBcd(second));
-    Wire.write(decToBcd(minute));
-    Wire.write(decToBcd(hour));
-    Wire.write(decToBcd(weekDay));
-    Wire.write(decToBcd(monthDay));
-    Wire.write(decToBcd(month));
-    Wire.write(decToBcd(year));
+    Wire.write(zero);  //stop Oscillator
+    Wire.write(decToBcd(set_second));
+    Wire.write(decToBcd(set_minute));
+    Wire.write(decToBcd(set_hour));
+    Wire.write(decToBcd(set_weekDay));
+    Wire.write(decToBcd(set_monthDay));
+    Wire.write(decToBcd(set_month));
+    Wire.write(decToBcd(set_year));
     Wire.write(control);
-    Wire.write(12);    //data address 08
-    Wire.write(34);    //data address 09
+    //Wire.write(12);    //data address 08
+    //Wire.write(34);    //data address 09
     Wire.write(zero);  //start 
     Wire.endTransmission();
   
   }
   
-  byte decToBcd(byte val)
-  {
-    // Convert normal decimal numbers to binary coded decimal
-    return ( (val/10*16) + (val%10) );
-  }
-  
-  byte bcdToDec(byte val)  
-  {
-    // Convert binary coded decimal to normal decimal numbers
-    return ( (val/16*10) + (val%16) );
-  }
-  
   void now_datetime()
   {
+    //  Read from address ds1307
     Wire.beginTransmission(DS1307_ADDRESS);
     Wire.write(zero);
     Wire.endTransmission();
-    Wire.requestFrom(DS1307_ADDRESS, 10);
     
-    int second = bcdToDec(Wire.read());
-    int minute = bcdToDec(Wire.read());
-    int hour = bcdToDec(Wire.read() &0b111111); //24 hour time
-    int weekDay = bcdToDec(Wire.read()); //1-7 ->sunday - Saturday
-    int monthDay = bcdToDec(Wire.read());
-    int month = bcdToDec(Wire.read());
-    int year = bcdToDec(Wire.read());
-    int control = Wire.read();
-    int d1 = Wire.read();
-    int d2 = Wire.read();
+    Wire.requestFrom(DS1307_ADDRESS, 10);
+    _second = bcdToDec(Wire.read());
+    _minute = bcdToDec(Wire.read());
+    _hour = bcdToDec(Wire.read() &0b111111);  // 24 hour time
+    _weekDay = bcdToDec(Wire.read());         // 1-7 ->Sunday - Saturday
+    _monthDay = bcdToDec(Wire.read());
+    _month = bcdToDec(Wire.read());
+    _year = bcdToDec(Wire.read());
+    control = Wire.read();
+    //d1 = Wire.read();
+    //d2 = Wire.read();
   }
   
   void printDateTime()
   {
     now_datetime();
     
-    switch (weekDay) 
+    //print the data from DS1307
+    Serial.print("Day : ");
+    if(_weekDay == 1) Serial.print("Sunday");
+    if(_weekDay == 2) Serial.print("Monday");
+    if(_weekDay == 3) Serial.print("Tuesday");
+    if(_weekDay == 4) Serial.print("Wednesday");
+    if(_weekDay == 5) Serial.print("Thursday");
+    if(_weekDay == 6) Serial.print("Friday");
+    if(_weekDay == 7) Serial.print("Saturay");
+    
+    /*switch (_weekDay) 
     {
       case 1:
-        Serial.print(" Sunday")
+        Serial.print("Sunday");
       break;
       case 2:
-        Serial.print(" Monday")
+        Serial.print("Monday");
       break;
       case 3:
-        Serial.print(" Tuesday")
+        Serial.print("Tuesday");
       break;
       case 4:
-        Serial.print(" Wednesday")
+        Serial.print("Wednesday");
       break;
       case 5:
-        Serial.print(" Thursday")
+        Serial.print("Thursday");
       break;
       case 6:
-        Serial.print(" Friday")
+        Serial.print("Friday");
       break;
       case 7:
-        Serial.print(" Saturay")
+        Serial.print("Saturay");
       break;
-
-  }
-
-       
-    //print the data
-    Serial.println(" ");
-    Serial.print("Day : ");
-    Serial.print(weekDay);
+    }*/
+    
     Serial.print(", ");
-    Serial.print(monthDay);
+    Serial.print(_monthDay);
     Serial.print("/");
-    Serial.print(month);
+    Serial.print(_month);
     Serial.print("/20");
-    Serial.print(year);
+    Serial.print(_year);
     Serial.print(", ");
-    Serial.print(hour);
+    Serial.print(_hour);
     Serial.print(":");
-    Serial.print(minute);
+    Serial.print(_minute);
     Serial.print(":");
-    Serial.print(second);
+    Serial.print(_second);
     Serial.print(", ");
     Serial.print(control,BIN);
     Serial.print(", ");
     Serial.print(d1);
     Serial.print(", ");
     Serial.println(d2);
+ 
   }
